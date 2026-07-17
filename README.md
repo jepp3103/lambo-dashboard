@@ -1,5 +1,9 @@
 # Lambo Dashboard for Linux
 
+![License](https://img.shields.io/badge/license-GPL--3.0--or--later-blue)
+![Release](https://img.shields.io/github/v/release/jepp3103/lambo-dashboard)
+![Build](https://github.com/jepp3103/lambo-dashboard/actions/workflows/release.yml/badge.svg)
+
 Streams a Lamborghini-style dashboard to the Lian Li O11D EVO RGB Lamborghini
 Edition's rear panel, live, from a Linux host -- **no files written to the
 panel's own storage**, and no need for the Windows-only official driver.
@@ -14,6 +18,10 @@ official driver, for convenience. These are Lamborghini/Lian Li's assets,
 included here at the repo owner's discretion -- not a claim of ownership.
 If you're forking/redistributing this and want to avoid that, swap them out
 for your own or remove `res/` and supply your own via `$LAMBO_DASHBOARD_RES`.
+
+<!-- Add a real photo once you have one, then uncomment:
+![Dashboard running on the panel](docs/screenshot.jpg)
+-->
 
 ## Quick start (prebuilt binary)
 
@@ -67,9 +75,10 @@ packaging/install.sh        # installs it, udev rule, optional autostart
 
 ### Portability notes
 
-- The official release binary is built on Ubuntu 20.04 in CI specifically
-  for wide glibc compatibility across newer distros. If you build locally on
-  a bleeding-edge distro instead, the result may not run on older ones.
+- The official release binary is built on Ubuntu 22.04 in CI (the oldest
+  currently-supported GitHub-hosted runner image) for reasonably wide glibc
+  compatibility across newer distros. If you build locally on a
+  bleeding-edge distro instead, the result may not run on older ones.
 - x86-64 Linux only; rebuild on ARM if you need e.g. a Raspberry Pi.
 
 ## Run automatically on login (autostart)
@@ -101,6 +110,34 @@ headless or server-like use), also enable linger for your user:
 ```bash
 sudo loginctl enable-linger $USER
 ```
+
+## Uninstalling
+
+```bash
+chmod +x uninstall.sh   # or packaging/uninstall.sh if building from source
+./uninstall.sh
+```
+
+This stops and disables the service, and removes the binary, udev rule, and
+systemd unit. It won't touch anything outside what `install.sh` created.
+
+## What does install.sh actually do?
+
+Worth checking before running any script with `sudo` from a repo you don't
+know -- here's the complete list, no surprises:
+
+1. Copies the `lambo-dashboard` binary to `/usr/local/bin/` (needs sudo).
+2. Copies a udev rule to `/etc/udev/rules.d/99-lambo-dashboard.rules` that
+   grants read/write access to a USB serial device matching the panel's
+   known serial number (`CT50INCH`) -- and nothing else (needs sudo).
+3. Reloads udev rules (`udevadm control --reload-rules` / `trigger`).
+4. Optionally (only if you say yes at the prompt) copies a systemd user
+   service file to `~/.config/systemd/user/` and enables it -- this runs
+   entirely as your own user, not as root.
+
+It does not touch any other files, does not phone home, and does not
+modify anything outside those specific paths. Read `packaging/install.sh`
+yourself if you want to verify this directly -- it's short.
 
 ## Configuration
 
@@ -142,6 +179,30 @@ sudo usermod -aG dialout $USER
 **Panel not found**: run `packaging/detect.sh` (or `dmesg | tail` after
 plugging in) to confirm the panel enumerates and check its serial number
 matches what's expected.
+
+## Known working hardware
+
+Confirmed: Lian Li O11D EVO RGB Automobili Lamborghini Edition's built-in
+5" panel (`SerialNumber: CT50INCH`).
+
+If you get this running on a different panel, case, or distro, please open
+an issue or PR with what you tried and what worked -- this list is meant to
+grow with real reports, not guesses.
+
+## Notes for contributors (CI gotchas already hit once)
+
+A couple of non-obvious things that broke the release pipeline during
+initial setup, documented here so nobody has to rediscover them:
+
+- **`ubuntu-20.04` runner image was removed by GitHub in April 2025.**
+  Jobs using it queue forever waiting for a runner that no longer exists,
+  rather than failing outright. If a future GitHub deprecation does the
+  same to `ubuntu-22.04`, the workflow will need bumping again.
+- **`GITHUB_TOKEN` defaults to read-only.** Creating a release via
+  `softprops/action-gh-release` needs an explicit
+  `permissions: contents: write` block in the workflow (already present
+  in `release.yml`) -- without it, the job fails with a 403 partway
+  through, after the binary's already built.
 
 ## Acknowledgments
 

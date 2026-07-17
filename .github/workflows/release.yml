@@ -40,6 +40,7 @@ jobs:
           cp packaging/99-lambo-dashboard.rules out/lambo-dashboard-linux-x86_64/
           cp packaging/lambo-dashboard.service out/lambo-dashboard-linux-x86_64/
           cp packaging/install.sh out/lambo-dashboard-linux-x86_64/
+          cp packaging/uninstall.sh out/lambo-dashboard-linux-x86_64/
           cp packaging/detect.sh out/lambo-dashboard-linux-x86_64/
           tar -czf lambo-dashboard-linux-x86_64.tar.gz -C out lambo-dashboard-linux-x86_64
 
