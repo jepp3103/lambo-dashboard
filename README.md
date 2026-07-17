@@ -72,6 +72,34 @@ packaging/install.sh        # installs it, udev rule, optional autostart
   a bleeding-edge distro instead, the result may not run on older ones.
 - x86-64 Linux only; rebuild on ARM if you need e.g. a Raspberry Pi.
 
+## Run automatically on login (autostart)
+
+If you used `install.sh` and answered "y" to the systemd prompt, this is
+already set up — skip ahead. Otherwise, to enable it manually (or add it
+after the fact):
+
+```bash
+mkdir -p ~/.config/systemd/user
+cp packaging/lambo-dashboard.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now lambo-dashboard.service
+```
+
+Useful commands:
+
+```bash
+systemctl --user status lambo-dashboard    # check if it's running
+systemctl --user stop lambo-dashboard      # stop it now
+systemctl --user disable lambo-dashboard   # stop it from autostarting
+```
+
+If you want it to start even without an active graphical login (e.g.
+headless or server-like use), also enable linger for your user:
+
+```bash
+sudo loginctl enable-linger $USER
+```
+
 ## Configuration
 
 Environment variables:
@@ -112,6 +140,17 @@ sudo usermod -aG dialout $USER
 **Panel not found**: run `packaging/detect.sh` (or `dmesg | tail` after
 plugging in) to confirm the panel enumerates and check its serial number
 matches what's expected.
+
+## Acknowledgments
+
+This project exists because of the reverse-engineering and protocol work
+done by [mathoudebine](https://github.com/mathoudebine) and contributors on
+[turing-smart-screen-python](https://github.com/mathoudebine/turing-smart-screen-python).
+The `library/` folder here is a small vendored subset of that project's
+code, used as-is to talk to the panel over serial. If you found this repo
+useful, that project deserves the credit for the underlying hardware
+support -- it covers a much wider range of panels than just this one, and
+is worth a star in its own right.
 
 ## License
 
