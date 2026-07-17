@@ -88,9 +88,11 @@ systemctl --user enable --now lambo-dashboard.service
 Useful commands:
 
 ```bash
-systemctl --user status lambo-dashboard    # check if it's running
-systemctl --user stop lambo-dashboard      # stop it now
-systemctl --user disable lambo-dashboard   # stop it from autostarting
+systemctl --user status lambo-dashboard      # check if it's running
+systemctl --user restart lambo-dashboard     # restart it (e.g. after unplugging the panel)
+systemctl --user stop lambo-dashboard        # stop it now
+systemctl --user disable lambo-dashboard     # stop it from autostarting
+journalctl --user -u lambo-dashboard -f      # follow its live logs
 ```
 
 If you want it to start even without an active graphical login (e.g.
