@@ -19,9 +19,7 @@ included here at the repo owner's discretion -- not a claim of ownership.
 If you're forking/redistributing this and want to avoid that, swap them out
 for your own or remove `res/` and supply your own via `$LAMBO_DASHBOARD_RES`.
 
-<!-- Add a real photo once you have one, then uncomment:
-![Dashboard running on the panel](docs/screenshot.jpg)
--->
+![Dashboard running on the panel](docs/demo.gif)
 
 ## Quick start (prebuilt binary)
 
