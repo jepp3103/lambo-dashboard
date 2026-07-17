@@ -1,0 +1,11 @@
+[Unit]
+Description=Lambo dashboard panel
+After=graphical-session.target
+
+[Service]
+ExecStart=/usr/local/bin/lambo-dashboard
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

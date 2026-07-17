@@ -1,0 +1,15 @@
+This project incorporates a vendored subset of turing-smart-screen-python
+(https://github.com/mathoudebine/turing-smart-screen-python), licensed under
+GPL-3.0-or-later (see library/LICENSE for the full text).
+
+Because this project's own code (lambo_dashboard.py, extract_backgrounds.py,
+and the packaging scripts) is distributed together with, and depends on,
+that GPL-3.0-or-later code, the combined work as published in this
+repository -- including any compiled binaries built from it -- is licensed
+as a whole under the GNU General Public License v3.0 or later.
+
+You are free to use, modify, and redistribute this project under those
+terms. See library/LICENSE for the full GPL-3.0-or-later text, which applies
+to this repository as a whole.
+
+Copyright (c) 2026 Jay

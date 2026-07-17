@@ -1,0 +1,4 @@
+# Grants read/write access to the Lambo dashboard panel to any local user,
+# identified by its unique serial number (works regardless of which /dev/ttyACMx
+# it enumerates as, and regardless of distro-specific default group ownership).
+SUBSYSTEM=="tty", ATTRS{serial}=="CT50INCH", MODE="0666"
