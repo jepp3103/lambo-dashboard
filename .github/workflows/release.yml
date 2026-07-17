@@ -1,18 +1,22 @@
 name: Build release binary
 
-# Builds the code-only binary (no proprietary assets bundled) and attaches
-# it to the GitHub Release whenever a version tag is pushed, e.g.:
-#   git tag v1.0.0 && git push --tags
+# Builds the binary (with dashboard assets baked in) and attaches it to the
+# GitHub Release whenever a version tag is pushed, e.g.:
+#   git tag v1.0.1 && git push --tags
 
 on:
   push:
     tags:
       - "v*"
 
+permissions:
+  contents: write   # required for softprops/action-gh-release to create releases
+
 jobs:
   build:
-    # Use an older Ubuntu image so the resulting binary's glibc requirement
-    # stays low, giving it a shot at running on a wide range of distros.
+    # ubuntu-22.04 is the oldest currently-supported GitHub-hosted runner
+    # (ubuntu-20.04 was fully removed April 2025) -- keeps the glibc
+    # requirement of the built binary as low as reasonably possible.
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
