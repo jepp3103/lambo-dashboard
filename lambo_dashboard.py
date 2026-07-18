@@ -222,7 +222,12 @@ def main():
                 except Exception:
                     pass
                 time.sleep(min(consecutive_failures * 2, 30))
-                new_port = find_panel_port(timeout=30) or port
+                new_port = None
+                while new_port is None:
+                    new_port = find_panel_port(timeout=30)
+                    if new_port is None:
+                        print("Still couldn't find the panel, retrying...")
+                port = new_port
                 lcd = connect(new_port)
             time.sleep(REFRESH_SECONDS)
     except KeyboardInterrupt:
