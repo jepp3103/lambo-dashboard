@@ -3,7 +3,7 @@
 Lamborghini dashboard for the Lian Li O11D EVO RGB Lamborghini Edition rear panel,
 streamed live from a Linux host instead of playing pre-baked video off the panel.
 
-Install:  pip install pyserial pillow psutil numpy
+Install:  pip install pyserial pillow psutil
 
 This does NOT touch the panel's onboard storage. It renders each frame on the
 host and pushes it over serial with DisplayPILImage(), the same primitive the
@@ -36,7 +36,10 @@ from library.lcd.lcd_comm_rev_c import LcdCommRevC     # noqa: E402
 
 # ============================== CONFIGURATION ==============================
 
-PANEL_SERIAL = "CT50INCH"  # identifies this exact panel model, used for auto-detect
+PANEL_SERIAL = "20080411"  # the panel's "awake" identity -- matches upstream's own
+                            # _get_awake_com_port() detection, confirmed via testing
+                            # the official turing-smart-screen-python project directly
+PANEL_VID_PID = (0x1d6b, 0x0106)  # "awake" identity VID:PID (shows as "Android" in lsusb/dmesg)
 DISPLAY_W, DISPLAY_H = 480, 800   # native panel orientation (portrait)
 ORIENTATION = Orientation.LANDSCAPE  # dashboard art is 800x480, so rotate to landscape
 COLOR_VARIANT = os.environ.get("LAMBO_DASHBOARD_COLOR", "c1")  # c1..c8
@@ -90,14 +93,26 @@ def find_res_dir():
 
 
 def find_panel_port(timeout=15):
-    """Scan connected serial devices for the panel's known serial number.
-    Makes the script portable across machines/reboots instead of a fixed path."""
+    """Scan connected serial devices for the panel's known serial number AND
+    USB vendor/product ID -- requiring both avoids ever misidentifying an
+    unrelated device if serial number matching alone were to misfire."""
     deadline = time.time() + timeout
+    last_seen = []
     while time.time() < deadline:
-        for port in comports():
-            if port.serial_number and PANEL_SERIAL in port.serial_number:
+        last_seen = list(comports())
+        for port in last_seen:
+            serial_ok = port.serial_number and PANEL_SERIAL in port.serial_number
+            vidpid_ok = port.vid == PANEL_VID_PID[0] and port.pid == PANEL_VID_PID[1]
+            if serial_ok and vidpid_ok:
                 return port.device
         time.sleep(1)
+
+    if last_seen:
+        print("Timed out looking for the panel. Ports currently visible:")
+        for port in last_seen:
+            print(f"  {port.device} | VID:PID = {hex(port.vid) if port.vid else None}:"
+                  f"{hex(port.pid) if port.pid else None} | serial = {port.serial_number} "
+                  f"| product = {port.product}")
     return None
 
 
@@ -151,9 +166,28 @@ def build_frame(res_dir, fonts, variant):
     return frame
 
 
+def connect(port, allow_reset=True):
+    lcd = LcdCommRevC(com_port=port, display_width=DISPLAY_W, display_height=DISPLAY_H)
+    try:
+        # Try talking to it directly first -- if it's already alive and
+        # responsive, this avoids an unnecessary ~30 second hardware reboot
+        # of the panel's own microcontroller.
+        lcd.InitializeComm()
+    except Exception as e:
+        if not allow_reset:
+            raise
+        print(f"Direct handshake failed ({e}), falling back to a full reset...")
+        lcd.Reset()
+        lcd.InitializeComm()
+    lcd.SetOrientation(ORIENTATION)
+    lcd.SetBrightness(80)
+    return lcd
+
+
 def main():
     res_dir = find_res_dir()
     print(f"Using assets from: {res_dir}")
+    fonts = load_fonts(res_dir)
 
     print("Looking for panel...")
     port = find_panel_port()
@@ -163,18 +197,33 @@ def main():
         sys.exit(1)
     print(f"Found panel on {port}")
 
-    lcd = LcdCommRevC(com_port=port, display_width=DISPLAY_W, display_height=DISPLAY_H)
-    lcd.Reset()
-    lcd.InitializeComm()
-    lcd.SetOrientation(ORIENTATION)
-    lcd.SetBrightness(80)
-
-    fonts = load_fonts(res_dir)
+    lcd = None
+    while lcd is None:
+        try:
+            lcd = connect(port)
+        except Exception as e:
+            print(f"Initial connection failed ({e}), retrying in 5 seconds...")
+            time.sleep(5)
+            port = find_panel_port(timeout=30) or port
+    consecutive_failures = 0
 
     try:
         while True:
-            frame = build_frame(res_dir, fonts, COLOR_VARIANT)
-            lcd.DisplayPILImage(frame)
+            try:
+                frame = build_frame(res_dir, fonts, COLOR_VARIANT)
+                lcd.DisplayPILImage(frame)
+                consecutive_failures = 0
+            except Exception as e:
+                consecutive_failures += 1
+                print(f"Frame push failed ({e}), reconnecting "
+                      f"(attempt {consecutive_failures})...")
+                try:
+                    lcd.closeSerial()
+                except Exception:
+                    pass
+                time.sleep(min(consecutive_failures * 2, 30))
+                new_port = find_panel_port(timeout=30) or port
+                lcd = connect(new_port)
             time.sleep(REFRESH_SECONDS)
     except KeyboardInterrupt:
         pass
