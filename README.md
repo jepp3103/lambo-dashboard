@@ -19,7 +19,9 @@ included here at the repo owner's discretion -- not a claim of ownership.
 If you're forking/redistributing this and want to avoid that, swap them out
 for your own or remove `res/` and supply your own via `$LAMBO_DASHBOARD_RES`.
 
-![Dashboard running on the panel](docs/demo.gif)
+<!-- Add a real photo once you have one, then uncomment:
+![Dashboard running on the panel](docs/screenshot.jpg)
+-->
 
 ## Quick start (prebuilt binary)
 
@@ -59,7 +61,7 @@ grants access by the panel's serial number directly.
 ## Running from source (for development)
 
 ```bash
-pip install pyserial pillow psutil numpy
+pip install pyserial pillow psutil
 python3 lambo_dashboard.py
 ```
 
@@ -164,6 +166,29 @@ constants at the top of `lambo_dashboard.py` -- edit and rebuild as needed.
 - Tested on one specific panel/machine combination -- if you get this
   running on different hardware or distros, please open a PR updating this
   README with what worked.
+
+### A real bug this project hit, in case you hit it too
+
+Early versions of this project connected to the panel's `1a86:ca50`
+("sleeping"/`CT50INCH`) USB identity for the handshake. That identity
+enumerates correctly and consistently, but **does not respond to the
+protocol handshake** -- the panel actually needs to be addressed via its
+other identity, `1d6b:0106` (shows up as `Android`/serial `20080411` in
+`lsusb`/`dmesg`, for unrelated OEM-firmware reasons). This is already
+handled correctly by `_get_awake_com_port()` in the underlying
+`turing-smart-screen-python` library this project vendors from -- the bug
+was entirely in this project's own port-selection logic ignoring that and
+targeting the wrong identity. `PANEL_SERIAL`/`PANEL_VID_PID` in
+`lambo_dashboard.py` are fixed as of v1.0.6 to target the correct identity.
+
+If you fork this for a different panel model and it seems to enumerate fine
+but never responds to the handshake, this is worth checking first --
+compare against what `turing-smart-screen-python`'s own `main.py` and
+`config.yaml` auto-detect, and make sure you're targeting the same identity
+it lands on. A USB packet capture (Wireshark + USBPcap on Windows, if you
+have access to the official driver) of a *working* session is the fastest
+way to confirm which identity actually carries real traffic if you're ever
+unsure.
 
 ## Troubleshooting
 
