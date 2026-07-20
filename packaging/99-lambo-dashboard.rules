@@ -1,4 +1,7 @@
-# Grants read/write access to the Lambo dashboard panel to any local user,
-# identified by its unique serial number (works regardless of which /dev/ttyACMx
-# it enumerates as, and regardless of distro-specific default group ownership).
+# Grants read/write access to the Lambo dashboard panel to any local user.
+# The panel presents two USB identities: CT50INCH (enumerates but doesn't
+# respond to the protocol) and 20080411 (the one actually used for
+# communication, shows as "Android" in lsusb/dmesg for unrelated reasons).
+# Both are covered here since either might be the one lambo-dashboard opens.
 SUBSYSTEM=="tty", ATTRS{serial}=="CT50INCH", MODE="0666"
+SUBSYSTEM=="tty", ATTRS{serial}=="20080411", MODE="0666"
